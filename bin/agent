@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+import sys
+import os
+import argparse
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from agent.core.runtime import RuntimeManager
+from agent.core.loop import AgentCore
+from agent.llm.provider import LocalQwenProvider
+from agent.projects.manager import ProjectManager, TaskManager
+from agent.build.doctor import EnvironmentDoctor
+from agent.github.manager import GitHubManager, PushBlockedError
+
+def main():
+    parser = argparse.ArgumentParser(description="Antigravity Agent CLI")
+    subparsers = parser.add_subparsers(dest="command")
+
+    # Doctor
+    subparsers.add_parser("doctor")
+
+    # Project commands
+    project_parser = subparsers.add_parser("project")
+    project_sub = project_parser.add_subparsers(dest="proj_command")
+    project_sub.add_parser("list")
+    create_p = project_sub.add_parser("create")
+    create_p.add_argument("name")
+    info_p = project_sub.add_parser("info")
+    info_p.add_argument("project_id")
+    detect_p = project_sub.add_parser("detect")
+    detect_p.add_argument("project_id")
+
+    # Task commands
+    task_parser = subparsers.add_parser("task")
+    task_sub = task_parser.add_subparsers(dest="task_command")
+    list_t = task_sub.add_parser("list")
+    list_t.add_argument("project_id")
+    create_t = task_sub.add_parser("create")
+    create_t.add_argument("project_id")
+    create_t.add_argument("title")
+    create_t.add_argument("desc")
+
+    # Run / Resume
+    run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("project_id")
+    run_parser.add_argument("task_id")
+    resume_parser = subparsers.add_parser("resume")
+    resume_parser.add_argument("session_id")
+    resume_parser.add_argument("project_id")
+    resume_parser.add_argument("task_id")
+
+    # GitHub
+    gh_parser = subparsers.add_parser('github')
+    gh_sub = gh_parser.add_subparsers(dest='gh_command')
+    status_p = gh_sub.add_parser('status')
+    status_p.add_argument('workspace_dir')
+    remote_p = gh_sub.add_parser('remote')
+    remote_p.add_argument('workspace_dir')
+    remote_p.add_argument('--set', dest='set_url', help='Set remote URL')
+    fetch_p = gh_sub.add_parser('fetch')
+    fetch_p.add_argument('workspace_dir')
+    prep_p = gh_sub.add_parser('prepare-push')
+    prep_p.add_argument('workspace_dir')
+    push_p = gh_sub.add_parser('push')
+    push_p.add_argument('workspace_dir')
+    push_p.add_argument('--authorized', action='store_true')
+    args = parser.parse_args()
+    
+    if args.command == "doctor":
+        report = EnvironmentDoctor.diagnose()
+        print("--- Environment Doctor ---")
+        for tool, path in report.items():
+            print(f"{tool.ljust(10)}: {path}")
+        sys.exit(0)
+    
+    drive_root = os.path.join(os.getcwd(), "Drive", "Agent")
+    pm = ProjectManager(drive_root)
+    tm = TaskManager(drive_root)
+
+    if args.command == "project":
+        if args.proj_command == "list":
+            projects = pm.list_projects()
+            print(f"Projects ({len(projects)}):")
+            for p in projects:
+                print(f" - {p['project_id']} | {p['name']} | {p['type']}")
+        elif args.proj_command == "create":
+            pid = pm.create_project(args.name)
+            print(f"Created project: {pid}")
+        elif args.proj_command == "info":
+            p = pm.get_project(args.project_id)
+            print(p if p else "Not found")
+        elif args.proj_command == "detect":
+            ws_path = "/tmp/workspace"
+            res = pm.detect_project(args.project_id, ws_path)
+            print(res)
+    elif args.command == "task":
+        if args.task_command == "list":
+            tasks = tm.list_tasks(args.project_id)
+            print(f"Tasks ({len(tasks)}):")
+            for t in tasks:
+                print(f" - {t['task_id']} | {t['title']} | Status: {t['status']}")
+        elif args.task_command == "create":
+            tid = tm.create_task(args.project_id, args.title, args.desc)
+            print(f"Created task: {tid}")
+    elif args.command == "run":
+        rm = RuntimeManager(drive_root)
+        if not rm.acquire_lock():
+            print("Failed to acquire lock.")
+            sys.exit(1)
+        provider = LocalQwenProvider()
+        core = AgentCore(provider, "/tmp/workspace", rm, project_id=args.project_id, task_id=args.task_id)
+        res = core.run()
+        print(f"Result: {res}")
+        rm.release_lock()
+    elif args.command == "resume":
+        rm = RuntimeManager(drive_root)
+        if not rm.acquire_lock():
+            print("Failed to acquire lock.")
+            sys.exit(1)
+        provider = LocalQwenProvider()
+        core = AgentCore(provider, "/tmp/workspace", rm, project_id=args.project_id, task_id=args.task_id)
+        res = core.run(session_id=args.session_id)
+        print(f"Result: {res}")
+        rm.release_lock()
+
+    elif args.command == 'github':
+        gh = GitHubManager(args.workspace_dir)
+        if args.gh_command == 'status':
+            print(gh.get_status())
+        elif args.gh_command == 'remote':
+            if args.set_url:
+                gh.set_remote(args.set_url)
+                print(f'Remote set to {args.set_url}')
+            else:
+                print(gh.check_config())
+        elif args.gh_command == 'fetch':
+            print('Fetch success:', gh.fetch())
+        elif args.gh_command == 'prepare-push':
+            prep = gh.prepare_push()
+            print('--- Push Preparation ---')
+            for k, v in prep.items(): print(f'{k}: {v}')
+        elif args.gh_command == 'push':
+            try:
+                res = gh.push(authorized=args.authorized)
+                print(res)
+            except PushBlockedError as e:
+                print(str(e))
+if __name__ == "__main__":
+    main()

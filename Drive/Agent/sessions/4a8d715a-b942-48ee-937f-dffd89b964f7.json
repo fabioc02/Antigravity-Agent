@@ -1,0 +1,14 @@
+{
+    "session_id": "4a8d715a-b942-48ee-937f-dffd89b964f7",
+    "task_id": "Test task that will be interrupted",
+    "project_id": "default",
+    "status": "RUNNING",
+    "started_at": 1788329553.1242301,
+    "last_action": {
+        "tool": "filesystem.list",
+        "args": {
+            "path": "."
+        }
+    },
+    "iteration": 3
+}

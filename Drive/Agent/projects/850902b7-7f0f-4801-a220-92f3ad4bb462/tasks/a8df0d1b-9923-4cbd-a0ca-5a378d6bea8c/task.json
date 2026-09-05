@@ -1,0 +1,13 @@
+{
+    "task_id": "a8df0d1b-9923-4cbd-a0ca-5a378d6bea8c",
+    "project_id": "850902b7-7f0f-4801-a220-92f3ad4bb462",
+    "title": "Task E1",
+    "description": "Implementar mult e soma",
+    "status": "COMPLETED",
+    "priority": "normal",
+    "created_at": 1788331414.6094422,
+    "updated_at": 1788331415.208253,
+    "session_id": "abfe58f3-7fc4-4044-a066-b0286b7fc1b8",
+    "runtime_id": null,
+    "iteration": 3
+}

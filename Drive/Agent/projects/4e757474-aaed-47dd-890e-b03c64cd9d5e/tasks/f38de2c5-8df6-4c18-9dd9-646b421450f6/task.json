@@ -1,0 +1,13 @@
+{
+    "task_id": "f38de2c5-8df6-4c18-9dd9-646b421450f6",
+    "project_id": "4e757474-aaed-47dd-890e-b03c64cd9d5e",
+    "title": "Task A1",
+    "description": "Escrever script py",
+    "status": "COMPLETED",
+    "priority": "normal",
+    "created_at": 1788330324.789422,
+    "updated_at": 1788330324.8016303,
+    "session_id": "29bb8aea-5371-47b6-8174-3b67309f1110",
+    "runtime_id": null,
+    "iteration": 1
+}

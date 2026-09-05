@@ -1,0 +1,13 @@
+{
+    "task_id": "6c8e0d5a-d50d-477b-9329-51b9297a40af",
+    "project_id": "120ab676-88ea-4460-8dd2-d1c302cd9ebd",
+    "title": "Task B1",
+    "description": "Halfway task",
+    "status": "COMPLETED",
+    "priority": "normal",
+    "created_at": 1788330324.802387,
+    "updated_at": 1788330324.8167915,
+    "session_id": "4677ac9e-9700-4c46-b1ea-039a8f46d5c8",
+    "runtime_id": null,
+    "iteration": 0
+}

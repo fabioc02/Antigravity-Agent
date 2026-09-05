@@ -1,0 +1,13 @@
+{
+    "task_id": "6e6f4cd9-8c6b-42f2-9e00-d142cba061dd",
+    "project_id": "efb5666f-7e02-41b3-aecc-cff7aad26ed5",
+    "title": "Criar main.py",
+    "description": "Crie um arquivo main.py que imprima Hello World",
+    "status": "PENDING",
+    "priority": "normal",
+    "created_at": 1788402217.5990834,
+    "updated_at": 1788402217.5990837,
+    "session_id": null,
+    "runtime_id": null,
+    "iteration": 0
+}

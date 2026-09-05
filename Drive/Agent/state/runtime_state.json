@@ -1,0 +1,11 @@
+{
+    "runtime_id": "00236c56-f7d7-461a-8f75-1f471d96ebf7",
+    "hardware": {
+        "ram_gb": 4.0,
+        "gpu": false,
+        "gpu_name": null,
+        "vram_gb": 0.0
+    },
+    "started_at": 1788402414.7146983,
+    "last_heartbeat": 1788402414.7146983
+}

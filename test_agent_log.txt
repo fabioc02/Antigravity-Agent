@@ -1,0 +1,19 @@
+
+--- Iteração 1 ---
+[TOOL CALL] read_file({'path': 'project/hello.py'})
+[TOOL RESULT] def greet(name):
+    print("Hello " + name
+    
+greet("World")
+
+
+--- Iteração 2 ---
+API ERROR: {
+  "error": {
+    "code": 503,
+    "message": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",
+    "status": "UNAVAILABLE"
+  }
+}
+
+ERRO: {'error': 'HTTP Error 503: Service Unavailable'}

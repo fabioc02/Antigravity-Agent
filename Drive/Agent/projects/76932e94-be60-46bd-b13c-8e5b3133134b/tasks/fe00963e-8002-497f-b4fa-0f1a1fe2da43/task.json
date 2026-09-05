@@ -1,0 +1,13 @@
+{
+    "task_id": "fe00963e-8002-497f-b4fa-0f1a1fe2da43",
+    "project_id": "76932e94-be60-46bd-b13c-8e5b3133134b",
+    "title": "Task D1",
+    "description": "Testar automacao Git",
+    "status": "COMPLETED",
+    "priority": "normal",
+    "created_at": 1788330702.6284842,
+    "updated_at": 1788330702.795434,
+    "session_id": "85e7659b-c6d6-4b63-a584-fe79d171ce47",
+    "runtime_id": null,
+    "iteration": 2
+}

@@ -1,0 +1,13 @@
+{
+    "task_id": "fb3d62d7-d7f7-448f-89fd-9cef018352ed",
+    "project_id": "15ed5cb0-ca64-4c30-846e-ac8bc502044d",
+    "title": "Task N1",
+    "description": "Node task",
+    "status": "PENDING",
+    "priority": "normal",
+    "created_at": 1788331104.148911,
+    "updated_at": 1788331104.1489115,
+    "session_id": null,
+    "runtime_id": null,
+    "iteration": 0
+}

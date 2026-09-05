@@ -1,0 +1,13 @@
+{
+    "task_id": "ffc4702b-87f0-49f4-92ab-f8d343e54c05",
+    "project_id": "39e7a1dc-efb8-4720-8ce2-5061b8482b6c",
+    "title": "Task E1",
+    "description": "Implementar funcao soma",
+    "status": "COMPLETED",
+    "priority": "normal",
+    "created_at": 1788331103.1352682,
+    "updated_at": 1788331104.147983,
+    "session_id": "c51914c4-8ec4-4865-a6bb-52942c6bec61",
+    "runtime_id": null,
+    "iteration": 2
+}

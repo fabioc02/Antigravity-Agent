@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+import sys
+import os
+import argparse
+import json
+import datetime
+
+DRIVE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, DRIVE_ROOT)
+
+from agent.core.runtime import RuntimeManager
+
+def get_runtime_manager():
+    return RuntimeManager(DRIVE_ROOT)
+
+def cmd_doctor(args):
+    print("=== AGENT DOCTOR ===")
+    rm = get_runtime_manager()
+    profile = rm._get_hardware_profile()
+    print(f"[OK] Drive Root: {DRIVE_ROOT}")
+    print(f"[OK] RAM: {profile['ram_gb']} GB")
+    if profile['gpu']:
+        print(f"[OK] GPU: {profile['gpu_name']} ({profile['vram_gb']} GB VRAM)")
+    else:
+        print("[WARN] No GPU detected. Must use API fallback.")
+    if rm.acquire_lock(timeout=1):
+        print("[OK] Lock acquired successfully.")
+        rm.release_lock()
+    else:
+        print("[WARN] Lock currently held by another runtime.")
+
+def cmd_status(args):
+    print("=== AGENT STATUS ===")
+    rm = get_runtime_manager()
+    profile = rm._get_hardware_profile()
+    
+    print(f"Runtime ID : {rm.runtime_id}")
+    print(f"GPU        : {'Yes' if profile['gpu'] else 'No'}")
+    
+    lock_path = rm.lock_file
+    if os.path.exists(lock_path):
+        with open(lock_path, "r") as f:
+            lock_data = json.load(f)
+        print(f"Lock Held By: {lock_data.get('runtime_id')}")
+        last_hb = lock_data.get('last_heartbeat', 0)
+        print(f"Last Heartbeat: {datetime.datetime.fromtimestamp(last_hb).isoformat()}")
+    else:
+        print("Lock       : FREE")
+        
+    last_session = rm.get_last_active_session()
+    print(f"Last Session: {last_session}")
+    if last_session:
+        sdata = rm.load_session(last_session)
+        if sdata:
+            print(f"  Project ID : {sdata.get('project_id')}")
+            print(f"  Task       : {sdata.get('task_id')}")
+            print(f"  Status     : {sdata.get('status')}")
+            print(f"  Iteration  : {sdata.get('iteration')}")
+            print(f"  Workspace Hash: {sdata.get('workspace_hash')}")
+
+def cmd_start(args):
+    rm = get_runtime_manager()
+    if not rm.acquire_lock():
+        print("Cannot start: another runtime is currently active.")
+        sys.exit(1)
+        
+    rm.register_runtime()
+    
+    from agent.llm.provider import ExternalAPIProvider, LocalQwenProvider
+    profile = rm._get_hardware_profile()
+    if profile['gpu']:
+        provider = LocalQwenProvider("Qwen/Qwen2.5-Coder-7B-Instruct-AWQ")
+    else:
+        provider = ExternalAPIProvider()
+        
+    from agent.core.loop import AgentCore
+    workspace = os.getenv("AGENT_WORKSPACE", "/tmp/agent_workspace")
+    
+    core = AgentCore(provider, workspace, rm, project_id=args.project)
+    print(f"Starting task: {args.task}")
+    result = core.run(args.task, max_iterations=args.max_iterations)
+    print(f"Result: {result}")
+    rm.release_lock()
+
+def cmd_resume(args):
+    rm = get_runtime_manager()
+    if not rm.acquire_lock():
+        print("Cannot resume: another runtime is currently active.")
+        sys.exit(1)
+        
+    rm.register_runtime()
+    
+    session_id = args.session_id
+    if not session_id:
+        session_id = rm.get_last_active_session()
+        
+    if not session_id:
+        print("No active session to resume.")
+        sys.exit(1)
+        
+    from agent.llm.provider import ExternalAPIProvider, LocalQwenProvider
+    profile = rm._get_hardware_profile()
+    if profile['gpu']:
+        provider = LocalQwenProvider("Qwen/Qwen2.5-Coder-7B-Instruct-AWQ")
+    else:
+        provider = ExternalAPIProvider()
+        
+    from agent.core.loop import AgentCore
+    workspace = os.getenv("AGENT_WORKSPACE", "/tmp/agent_workspace")
+    
+    session_data = rm.load_session(session_id)
+    project_id = session_data.get('project_id', 'default') if session_data else 'default'
+    
+    core = AgentCore(provider, workspace, rm, project_id=project_id)
+    print(f"Resuming session: {session_id}")
+    result = core.run("RESUMING", max_iterations=args.max_iterations, session_id=session_id)
+    print(f"Result: {result}")
+    rm.release_lock()
+
+def main():
+    parser = argparse.ArgumentParser(description="Autonomous Agent CLI")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    
+    doctor_parser = subparsers.add_parser("doctor", help="Check system health")
+    doctor_parser.set_defaults(func=cmd_doctor)
+    
+    status_parser = subparsers.add_parser("status", help="Check agent state")
+    status_parser.set_defaults(func=cmd_status)
+    
+    start_parser = subparsers.add_parser("start", help="Start a new task")
+    start_parser.add_argument("task", help="The task for the agent to execute")
+    start_parser.add_argument("--project", help="Project ID", default="default")
+    start_parser.add_argument("--max-iterations", type=int, default=15)
+    start_parser.set_defaults(func=cmd_start)
+    
+    resume_parser = subparsers.add_parser("resume", help="Resume a task")
+    resume_parser.add_argument("--session-id", help="Session ID to resume", default=None)
+    resume_parser.add_argument("--max-iterations", type=int, default=15)
+    resume_parser.set_defaults(func=cmd_resume)
+    
+    args = parser.parse_args()
+    args.func(args)
+
+if __name__ == "__main__":
+    main()
