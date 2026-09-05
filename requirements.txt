@@ -3,4 +3,3 @@ uvicorn
 websockets
 psutil
 pydantic
-google-genai

@@ -7,9 +7,12 @@ from agent.security.sandbox import SecuritySandbox
 from agent.llm.provider import LLMProvider
 
 class AgentCore:
-    def __init__(self, llm_provider: LLMProvider, workspace_root: str):
+    def __init__(self, llm_provider: LLMProvider, workspace_root: str, runtime_manager=None, project_id=None, task_id=None):
         self.llm = llm_provider
         self.sandbox = SecuritySandbox(workspace_root)
+        self.rm = runtime_manager
+        self.project_id = project_id
+        self.task_id = task_id
         self.tools = {
             "filesystem.list": ListDirectoryTool(self.sandbox),
             "filesystem.read": ReadFileTool(self.sandbox),
