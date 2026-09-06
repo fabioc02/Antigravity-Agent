@@ -1,6 +1,6 @@
 import os
 import re
-from agent.build.executor import SecureExecutor
+import subprocess
 
 class PushBlockedError(Exception):
     pass
@@ -8,14 +8,28 @@ class PushBlockedError(Exception):
 class GitHubManager:
     def __init__(self, workspace_root: str):
         self.workspace_root = workspace_root
-        self.executor = SecureExecutor(workspace_root)
         self.sensitive_patterns = [
             r'^\.env.*', r'.*secret.*', r'.*token.*', 
             r'.*credential.*', r'.*id_rsa.*', r'.*api_key.*'
         ]
 
     def _run_git(self, args: list) -> dict:
-        return self.executor.run(["git"] + args)
+        cmd = ["git"] + args
+        try:
+            res = subprocess.run(cmd, cwd=self.workspace_root, capture_output=True, text=True)
+            return {
+                "success": res.returncode == 0,
+                "stdout": res.stdout,
+                "stderr": res.stderr,
+                "returncode": res.returncode
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "stdout": "",
+                "stderr": str(e),
+                "returncode": -1
+            }
 
     def check_config(self) -> dict:
         res = self._run_git(["remote", "get-url", "origin"])
