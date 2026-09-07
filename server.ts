@@ -33,10 +33,15 @@ async function startServer() {
   pyBackend.on('close', (code) => {
     console.error(`FastAPI backend exited with code ${code}`);
   });
+  
+  process.on('SIGTERM', () => pyBackend.kill());
+  process.on('SIGINT', () => pyBackend.kill());
+  process.on('exit', () => pyBackend.kill());
 
   // Proxy /api and /ws to FastAPI
   app.use('/api', createProxyMiddleware({ target: 'http://127.0.0.1:8082', changeOrigin: true, pathRewrite: {'^/api': ''} }));
-  app.use('/ws', createProxyMiddleware({ target: 'http://127.0.0.1:8082', ws: true, changeOrigin: true, pathRewrite: {'^/ws': ''} }));
+  const wsProxy = createProxyMiddleware({ target: 'http://127.0.0.1:8082', ws: true, changeOrigin: true, pathRewrite: {'^/ws': ''} });
+  app.use('/ws', wsProxy);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
@@ -53,8 +58,14 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Node server running on http://localhost:${PORT}`);
+  });
+  
+  server.on('upgrade', (req, socket, head) => {
+    if (req.url && req.url.startsWith('/ws')) {
+      wsProxy.upgrade(req, socket, head);
+    }
   });
 }
 
