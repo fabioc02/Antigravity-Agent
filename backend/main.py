@@ -143,6 +143,9 @@ async def run_agent(request: Request):
     
     # Run in background
     async def bg_task():
+        # Wait 1 second to allow the frontend WebSocket to connect before emitting events
+        await asyncio.sleep(1.0)
+        
         emit_event_sync(session_id, "session_started", {"project_id": project_id, "task_id": task_id})
         try:
             res = await asyncio.to_thread(core.run, 10, session_id)
@@ -270,6 +273,7 @@ async def resume_session(session_id: str):
     active_cores[session_id] = core
     
     async def bg_task():
+        await asyncio.sleep(1.0)
         emit_event_sync(session_id, "session_resumed", {"project_id": project_id, "task_id": task_id})
         try:
             res = await asyncio.to_thread(core.run, 10, session_id)

@@ -195,13 +195,27 @@ function AgentTerminal({ project, task }: any) {
   
   const startAgent = async () => {
     setEvents([]);
-    const res = await ngrokFetch('/api/agent/run', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ project_id: project, task_id: task }) });
-    const data = await res.json();
-    setSession(data.session_id);
+    try {
+      const res = await ngrokFetch('/api/agent/run', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ project_id: project, task_id: task }) });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`HTTP Error ${res.status}: ${errText}`);
+      }
+      const data = await res.json();
+      setSession(data.session_id);
+    } catch (e: any) {
+      setEvents([{ type: 'error', error: 'Falha ao conectar com o backend: ' + e.message }]);
+    }
   };
   
   const cancelAgent = async () => {
-    if(session) await ngrokFetch(`/api/sessions/${session}/cancel`, { method: 'POST' });
+    if(session) {
+      try {
+        await ngrokFetch(`/api/sessions/${session}/cancel`, { method: 'POST' });
+      } catch (e: any) {
+        setEvents(prev => [...prev, { type: 'error', error: 'Falha ao cancelar: ' + e.message }]);
+      }
+    }
   };
 
   useEffect(() => {
@@ -214,6 +228,15 @@ function AgentTerminal({ project, task }: any) {
     ws.onmessage = (e) => {
       const event = JSON.parse(e.data);
       setEvents(prev => [...prev, event]);
+    };
+
+    ws.onerror = (e) => {
+      console.error("WebSocket Error:", e);
+      setEvents(prev => [...prev, { type: 'error', error: 'Erro de conexão no WebSocket. Verifique o console do navegador.' }]);
+    };
+    
+    ws.onclose = () => {
+      console.log("WebSocket Closed");
     };
     
     return () => { ws.close(); };

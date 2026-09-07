@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 
 import { spawn } from 'child_process';
 import { createServer as createViteServer } from 'vite';
@@ -13,7 +14,12 @@ async function startServer() {
   const PORT = 3000;
 
   // Start FastAPI backend on port 8082
-  const pythonCmd = process.env.PYTHON_EXEC || (process.cwd() + '/venv/bin/python');
+  let pythonCmd = process.env.PYTHON_EXEC;
+  if (!pythonCmd) {
+    const venvPath = path.join(process.cwd(), 'venv/bin/python');
+    pythonCmd = fs.existsSync(venvPath) ? venvPath : 'python3';
+  }
+  
   const pyBackend = spawn(pythonCmd, ['-m', 'backend.main'], {
     stdio: 'inherit',
     cwd: process.cwd(),
