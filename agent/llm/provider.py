@@ -54,9 +54,9 @@ class LocalQwenProvider(LLMProvider):
 
 class ExternalAPIProvider(LLMProvider):
     def __init__(self, api_key: str = None):
-        print("ExternalAPIProvider initialized as fallback chatbot.")
+        print("ExternalAPIProvider initialized as fallback. Real model failed to load.")
         pass
         
     def generate(self, prompt: str) -> str:
-        return '```json\n{"tool": "terminal.execute", "args": {"command": "echo hello"}}\n```\nTAREFA CONCLUIDA.'
+        return '```json\n{"tool": "terminal.execute", "args": {"command": "echo \'AVISO: O modelo Qwen falhou ao carregar (possivelmente falta o Pytorch/Transformers no ambiente). Para o agente funcionar de verdade, inicie o ambiente no Google Colab com as dependências corretas.\'"}}\n```\nTAREFA CONCLUIDA.'
 

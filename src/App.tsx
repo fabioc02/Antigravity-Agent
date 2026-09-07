@@ -127,6 +127,15 @@ function Projects({ projects, setProject, setTab }: any) {
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Novo Projeto..." className="bg-[#111111] border border-neutral-800 p-2 rounded-lg flex-1 text-neutral-200 placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
         <button onClick={createProject} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-500 transition-colors font-medium">Criar Projeto</button>
       </div>
+      <div className="bg-indigo-900/20 border border-indigo-500/30 p-4 rounded-xl text-sm text-indigo-200 space-y-2">
+        <p><strong>💡 Como trabalhar nos seus próprios projetos:</strong></p>
+        <ul className="list-disc list-inside space-y-1">
+          <li>Crie um projeto vazio acima e anote o ID do projeto.</li>
+          <li>No seu Google Drive, acesse a pasta <code className="bg-black/30 px-1 py-0.5 rounded">Drive/Agent/projects/[ID_DO_PROJETO]/source</code>.</li>
+          <li>Arraste e solte o código do seu projeto existente para dentro dessa pasta no Drive.</li>
+          <li>Ao iniciar o agente (Terminal), ele irá sincronizar essa pasta localmente e começará a trabalhar nos seus arquivos reais!</li>
+        </ul>
+      </div>
       <div className="space-y-2">
         {projects.map((p: any) => (
           <div key={p.project_id} className="p-4 border border-neutral-800 bg-[#111111] rounded-lg flex justify-between items-center hover:border-neutral-700 transition-colors">

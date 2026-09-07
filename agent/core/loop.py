@@ -5,6 +5,7 @@ from agent.tools.filesystem import ListDirectoryTool, ReadFileTool, WriteFileToo
 from agent.tools.terminal import TerminalExecuteTool
 from agent.security.sandbox import SecuritySandbox
 from agent.llm.provider import LLMProvider
+from agent.core.workspace import WorkspaceManager
 
 class AgentCore:
     def __init__(self, llm_provider: LLMProvider, workspace_root: str, runtime_manager=None, project_id=None, task_id=None):
@@ -13,6 +14,14 @@ class AgentCore:
         self.rm = runtime_manager
         self.project_id = project_id
         self.task_id = task_id
+        self.workspace_root = workspace_root
+        
+        self.wm = None
+        if self.rm and self.project_id:
+            self.wm = WorkspaceManager(self.rm.drive_root, self.project_id, self.workspace_root.replace(f"/{self.project_id}", ""))
+            self.wm.local_dir = self.workspace_root
+            self.wm.restore_from_drive()
+
         self.tools = {
             "filesystem.list": ListDirectoryTool(self.sandbox),
             "filesystem.read": ReadFileTool(self.sandbox),
@@ -32,9 +41,10 @@ class AgentCore:
             
         task_description = f"{task_data.get('title', '')}\n{task_data.get('description', '')}"
 
-        system_prompt = "Você é um agente autônomo. Ferramentas disponíveis:\n"
+        system_prompt = "Você é um agente autônomo de IA. Ferramentas disponíveis:\n"
         for name, t in self.tools.items():
             system_prompt += f"- {name}: {t.description}\n"
+        system_prompt += "\nDiretrizes de Workspace:\n- O seu diretório atual (.) já está no workspace local do projeto.\n- Tudo o que você criar ou editar será salvo automaticamente no Google Drive a cada interação.\n- Para interagir com o GitHub (ex: commitar, configurar remote, push), utilize a ferramenta 'terminal.execute' rodando comandos 'git' normais.\n"
         system_prompt += "\nFormate as chamadas de ferramentas como um bloco JSON: ```json\n{\"tool\": \"nome\", \"args\": {}}\n```. Se a tarefa estiver concluída, diga TAREFA CONCLUIDA. Por favor, sempre responda em Português."
         
         prompt = f"SYSTEM: {system_prompt}\n\nUSER: {task_description}\n\nASSISTANT: "
@@ -63,6 +73,8 @@ class AgentCore:
                     
                     if tool_name in self.tools:
                         result = self.tools[tool_name].execute(**args)
+                        if self.wm:
+                            self.wm.sync_to_drive()
                         print(f"[TOOL {tool_name}] {result}")
                         if self.rm and self.session_id:
                             self.rm.append_message(self.session_id, "user", str(result), i+1)
