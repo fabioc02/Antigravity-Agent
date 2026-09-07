@@ -2,6 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Activity, Folder, TerminalSquare, CheckSquare, Settings, Play, Square, Github, Monitor, Database, Cpu } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
+const ngrokFetch = (url: string, options: any = {}) => {
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      'ngrok-skip-browser-warning': 'true'
+    }
+  });
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [projects, setProjects] = useState([]);
@@ -11,8 +21,8 @@ export default function App() {
   const [currentTask, setCurrentTask] = useState<string | null>(null);
   
   useEffect(() => {
-    fetch('/api/health').then(r => r.json()).then(setHealth).catch(console.error);
-    fetch('/api/projects').then(r => r.json()).then(data => setProjects(data.projects)).catch(console.error);
+    ngrokFetch('/api/health').then(r => r.json()).then(setHealth).catch(console.error);
+    ngrokFetch('/api/projects').then(r => r.json()).then(data => setProjects(data.projects)).catch(console.error);
   }, []);
 
   return (
@@ -96,7 +106,7 @@ function Projects({ projects, setProject, setTab }: any) {
   const createProject = async () => {
     if(!name) return;
     try {
-      const res = await fetch('/api/projects', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ name }) });
+      const res = await ngrokFetch('/api/projects', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ name }) });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setProject(data.project_id);
@@ -131,14 +141,14 @@ function Tasks({ project, setTask, setTab }: any) {
 
   useEffect(() => {
     if(project) {
-      fetch(`/api/projects/${project}/tasks`).then(r => r.json()).then(d => setTasks(d.tasks)).catch(console.error);
+      ngrokFetch(`/api/projects/${project}/tasks`).then(r => r.json()).then(d => setTasks(d.tasks)).catch(console.error);
     }
   }, [project]);
 
   const createTask = async () => {
     if(!title || !project) return;
     try {
-      const res = await fetch(`/api/projects/${project}/tasks`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ title }) });
+      const res = await ngrokFetch(`/api/projects/${project}/tasks`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ title }) });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setTask(data.task_id);
@@ -185,13 +195,13 @@ function AgentTerminal({ project, task }: any) {
   
   const startAgent = async () => {
     setEvents([]);
-    const res = await fetch('/api/agent/run', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ project_id: project, task_id: task }) });
+    const res = await ngrokFetch('/api/agent/run', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ project_id: project, task_id: task }) });
     const data = await res.json();
     setSession(data.session_id);
   };
   
   const cancelAgent = async () => {
-    if(session) await fetch(`/api/sessions/${session}/cancel`, { method: 'POST' });
+    if(session) await ngrokFetch(`/api/sessions/${session}/cancel`, { method: 'POST' });
   };
 
   useEffect(() => {
