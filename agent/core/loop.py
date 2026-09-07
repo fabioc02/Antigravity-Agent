@@ -32,10 +32,10 @@ class AgentCore:
             
         task_description = f"{task_data.get('title', '')}\n{task_data.get('description', '')}"
 
-        system_prompt = "You are an autonomous agent. Available tools:\n"
+        system_prompt = "Você é um agente autônomo. Ferramentas disponíveis:\n"
         for name, t in self.tools.items():
             system_prompt += f"- {name}: {t.description}\n"
-        system_prompt += "\nFormat calls as JSON block: ```json\n{\"tool\": \"name\", \"args\": {}}\n```. If done, say TAREFA CONCLUIDA."
+        system_prompt += "\nFormate as chamadas de ferramentas como um bloco JSON: ```json\n{\"tool\": \"nome\", \"args\": {}}\n```. Se a tarefa estiver concluída, diga TAREFA CONCLUIDA. Por favor, sempre responda em Português."
         
         prompt = f"SYSTEM: {system_prompt}\n\nUSER: {task_description}\n\nASSISTANT: "
         if self.rm and self.session_id:

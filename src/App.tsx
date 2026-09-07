@@ -33,7 +33,11 @@ export default function App() {
         {activeTab === 'projects' && <Projects projects={projects} setProject={setCurrentProject} setTab={setActiveTab} />}
         {activeTab === 'tasks' && <Tasks project={currentProject} setTask={setCurrentTask} setTab={setActiveTab} />}
         {activeTab === 'terminal' && <AgentTerminal project={currentProject} task={currentTask} />}
-        {!['dashboard', 'projects', 'tasks', 'terminal'].includes(activeTab) && (
+        {activeTab === 'github' && <GithubTab project={currentProject} />}
+        {activeTab === 'bridge' && <BridgeTab />}
+        {activeTab === 'runtime' && <RuntimeTab />}
+        {activeTab === 'memory' && <MemoryTab />}
+        {!['dashboard', 'projects', 'tasks', 'terminal', 'github', 'bridge', 'runtime', 'memory'].includes(activeTab) && (
           <div className="flex flex-col items-center justify-center h-full text-neutral-500 space-y-4">
             <Settings className="w-12 h-12 opacity-50" />
             <h2 className="text-xl font-bold text-neutral-400">Módulo em Desenvolvimento</h2>
@@ -265,6 +269,128 @@ function AgentTerminal({ project, task }: any) {
             {ev.type === 'error' && <span className="text-red-300">{ev.error}</span>}
             {ev.type === 'session_started' && <span className="text-yellow-300">Sessão Iniciada!</span>}
             {ev.type === 'session_completed' && <span className="text-yellow-300 font-bold text-lg">Sessão Concluída! {JSON.stringify(ev.result)}</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GithubTab({ project }: any) {
+  const [status, setStatus] = useState<any>(null);
+  useEffect(() => {
+    if(project) {
+      ngrokFetch(`/api/github/status?project_id=${project}`).then(r => r.json()).then(setStatus).catch(console.error);
+    }
+  }, [project]);
+
+  if(!project) return <div className="text-neutral-400 p-6">Selecione um projeto na aba Projetos primeiro.</div>;
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold flex items-center gap-2"><Github /> Integração GitHub</h1>
+      <div className="bg-[#111111] p-6 rounded-xl border border-neutral-800 space-y-4 shadow-sm">
+        {status ? (
+          <div>
+            <div className="font-bold mb-2 text-indigo-400">Repositório Remoto:</div>
+            <div className="bg-[#050505] p-3 rounded text-neutral-300 font-mono text-sm break-all">{status.remote || 'Nenhum repositório configurado'}</div>
+            <div className="font-bold mt-4 mb-2 text-indigo-400">Status Local (Diff):</div>
+            <pre className="bg-[#050505] p-3 rounded text-neutral-300 font-mono text-sm overflow-x-auto whitespace-pre-wrap">
+              {status.diff || 'Nenhuma alteração local.'}
+            </pre>
+          </div>
+        ) : (
+          <div className="text-neutral-400">Carregando status do GitHub...</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BridgeTab() {
+  const [status, setStatus] = useState<any>(null);
+  useEffect(() => {
+    ngrokFetch('/api/bridge/status').then(r => r.json()).then(setStatus).catch(console.error);
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold flex items-center gap-2"><Monitor /> PC Bridge (Acesso Local)</h1>
+      <div className="bg-[#111111] p-6 rounded-xl border border-neutral-800 space-y-4 shadow-sm">
+        {status ? (
+          <div>
+            <div className="font-bold mb-2 text-indigo-400">Status do Tunel:</div>
+            <div className="bg-[#050505] p-3 rounded text-neutral-300 font-mono text-sm">
+               {status.status === 'ONLINE' ? <span className="text-green-400 font-bold">ONLINE</span> : <span className="text-red-400 font-bold">{status.status}</span>}
+            </div>
+            {status.endpoint && (
+              <>
+                <div className="font-bold mt-4 mb-2 text-indigo-400">Endpoint Configurado:</div>
+                <div className="bg-[#050505] p-3 rounded text-neutral-300 font-mono text-sm">{status.endpoint}</div>
+              </>
+            )}
+            {status.error && <div className="text-red-400 mt-2 font-medium">{status.error}</div>}
+          </div>
+        ) : (
+          <div className="text-neutral-400">Carregando PC Bridge...</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RuntimeTab() {
+  const [runtime, setRuntime] = useState<any>(null);
+  useEffect(() => {
+    ngrokFetch('/api/runtime').then(r => r.json()).then(setRuntime).catch(console.error);
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold flex items-center gap-2"><Cpu /> Status do Runtime (LLM)</h1>
+      <div className="bg-[#111111] p-6 rounded-xl border border-neutral-800 space-y-4 shadow-sm">
+        {runtime ? (
+          <div>
+            <pre className="bg-[#050505] p-4 rounded-lg text-neutral-300 font-mono text-sm overflow-x-auto">
+              {JSON.stringify(runtime, null, 2)}
+            </pre>
+          </div>
+        ) : (
+          <div className="text-neutral-400">Carregando informações do Runtime...</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MemoryTab() {
+  const [sessions, setSessions] = useState<any[]>([]);
+  useEffect(() => {
+    ngrokFetch('/api/sessions').then(r => r.json()).then(d => setSessions(d.sessions || [])).catch(console.error);
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold flex items-center gap-2"><Database /> Memória e Histórico de Sessões</h1>
+      <div className="grid grid-cols-1 gap-4">
+        {sessions.length === 0 ? (
+          <div className="text-neutral-500 p-4">Nenhuma sessão encontrada na memória do Google Drive.</div>
+        ) : sessions.map((sess: any, idx: number) => (
+          <div key={idx} className="bg-[#111111] p-5 rounded-xl border border-neutral-800 space-y-3 shadow-sm hover:border-neutral-700 transition-colors">
+            <div className="flex justify-between items-center">
+              <span className="font-bold text-indigo-400 font-mono">{sess.session_id}</span>
+              <span className={`text-xs px-2 py-1 rounded font-bold ${sess.status === 'RUNNING' ? 'bg-yellow-900/50 text-yellow-400' : 'bg-green-900/50 text-green-400'}`}>
+                {sess.status}
+              </span>
+            </div>
+            <div className="text-sm text-neutral-300 font-mono">
+              Projeto: <span className="text-neutral-400">{sess.project_id}</span> <br/>
+              Tarefa: <span className="text-neutral-400">{sess.task_id}</span>
+            </div>
+            <div className="text-xs text-neutral-500 flex justify-between">
+              <span>Iniciado em: {new Date(sess.started_at * 1000).toLocaleString()}</span>
+              <span>Iterações: {sess.iteration}</span>
+            </div>
           </div>
         ))}
       </div>

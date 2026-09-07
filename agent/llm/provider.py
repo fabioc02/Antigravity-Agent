@@ -54,7 +54,7 @@ class LocalQwenProvider(LLMProvider):
 
 class ExternalAPIProvider(LLMProvider):
     def __init__(self, api_key: str = None):
-        print("ExternalAPIProvider disabled. Forcing LocalQwenProvider usage.")
+        print("ExternalAPIProvider initialized as fallback chatbot.")
         pass
         
     def generate(self, prompt: str) -> str:

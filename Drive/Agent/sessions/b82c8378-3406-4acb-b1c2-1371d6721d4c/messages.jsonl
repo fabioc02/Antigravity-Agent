@@ -1,0 +1,22 @@
+{"timestamp": 1788794917.511066, "role": "system", "content": "Voc\u00ea \u00e9 um agente aut\u00f4nomo. Ferramentas dispon\u00edveis:\n- filesystem.list: List files in a directory\n- filesystem.read: Read a file\n- filesystem.write: Write content to a file\n- terminal.execute: Execute a shell command\n\nFormate as chamadas de ferramentas como um bloco JSON: ```json\n{\"tool\": \"nome\", \"args\": {}}\n```. Se a tarefa estiver conclu\u00edda, diga TAREFA CONCLUIDA. Por favor, sempre responda em Portugu\u00eas.", "iteration": 0, "metadata": {}}
+{"timestamp": 1788794917.511552, "role": "user", "content": "test task\n", "iteration": 0, "metadata": {}}
+{"timestamp": 1788794917.511796, "role": "assistant", "content": "Erro: O provedor de API externa foi desativado conforme solicitado para evitar custos extras. Apenas Qwen local (CPU/GPU) deve ser utilizado.", "iteration": 1, "metadata": {}}
+{"timestamp": 1788794917.5126069, "role": "user", "content": "Error: No valid JSON tool call found.", "iteration": 1, "metadata": {}}
+{"timestamp": 1788794917.5131767, "role": "assistant", "content": "Erro: O provedor de API externa foi desativado conforme solicitado para evitar custos extras. Apenas Qwen local (CPU/GPU) deve ser utilizado.", "iteration": 2, "metadata": {}}
+{"timestamp": 1788794917.5135615, "role": "user", "content": "Error: No valid JSON tool call found.", "iteration": 2, "metadata": {}}
+{"timestamp": 1788794917.5140102, "role": "assistant", "content": "Erro: O provedor de API externa foi desativado conforme solicitado para evitar custos extras. Apenas Qwen local (CPU/GPU) deve ser utilizado.", "iteration": 3, "metadata": {}}
+{"timestamp": 1788794917.5145433, "role": "user", "content": "Error: No valid JSON tool call found.", "iteration": 3, "metadata": {}}
+{"timestamp": 1788794917.5150518, "role": "assistant", "content": "Erro: O provedor de API externa foi desativado conforme solicitado para evitar custos extras. Apenas Qwen local (CPU/GPU) deve ser utilizado.", "iteration": 4, "metadata": {}}
+{"timestamp": 1788794917.5154147, "role": "user", "content": "Error: No valid JSON tool call found.", "iteration": 4, "metadata": {}}
+{"timestamp": 1788794917.5156171, "role": "assistant", "content": "Erro: O provedor de API externa foi desativado conforme solicitado para evitar custos extras. Apenas Qwen local (CPU/GPU) deve ser utilizado.", "iteration": 5, "metadata": {}}
+{"timestamp": 1788794917.5161934, "role": "user", "content": "Error: No valid JSON tool call found.", "iteration": 5, "metadata": {}}
+{"timestamp": 1788794917.516429, "role": "assistant", "content": "Erro: O provedor de API externa foi desativado conforme solicitado para evitar custos extras. Apenas Qwen local (CPU/GPU) deve ser utilizado.", "iteration": 6, "metadata": {}}
+{"timestamp": 1788794917.5169158, "role": "user", "content": "Error: No valid JSON tool call found.", "iteration": 6, "metadata": {}}
+{"timestamp": 1788794917.5173187, "role": "assistant", "content": "Erro: O provedor de API externa foi desativado conforme solicitado para evitar custos extras. Apenas Qwen local (CPU/GPU) deve ser utilizado.", "iteration": 7, "metadata": {}}
+{"timestamp": 1788794917.5177202, "role": "user", "content": "Error: No valid JSON tool call found.", "iteration": 7, "metadata": {}}
+{"timestamp": 1788794917.5179167, "role": "assistant", "content": "Erro: O provedor de API externa foi desativado conforme solicitado para evitar custos extras. Apenas Qwen local (CPU/GPU) deve ser utilizado.", "iteration": 8, "metadata": {}}
+{"timestamp": 1788794917.5183883, "role": "user", "content": "Error: No valid JSON tool call found.", "iteration": 8, "metadata": {}}
+{"timestamp": 1788794917.5186841, "role": "assistant", "content": "Erro: O provedor de API externa foi desativado conforme solicitado para evitar custos extras. Apenas Qwen local (CPU/GPU) deve ser utilizado.", "iteration": 9, "metadata": {}}
+{"timestamp": 1788794917.519024, "role": "user", "content": "Error: No valid JSON tool call found.", "iteration": 9, "metadata": {}}
+{"timestamp": 1788794917.519347, "role": "assistant", "content": "Erro: O provedor de API externa foi desativado conforme solicitado para evitar custos extras. Apenas Qwen local (CPU/GPU) deve ser utilizado.", "iteration": 10, "metadata": {}}
+{"timestamp": 1788794917.5197802, "role": "user", "content": "Error: No valid JSON tool call found.", "iteration": 10, "metadata": {}}
