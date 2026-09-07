@@ -1,0 +1,13 @@
+{
+    "task_id": "3710df8b-7c00-44e2-bc98-e0b4babdce50",
+    "project_id": "fc8df32f-6911-486a-92f9-dc6b2a85f587",
+    "title": "test task",
+    "description": "",
+    "status": "PENDING",
+    "priority": "normal",
+    "created_at": 1788791535.222009,
+    "updated_at": 1788791535.2220092,
+    "session_id": null,
+    "runtime_id": null,
+    "iteration": 0
+}

@@ -93,13 +93,17 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     except WebSocketDisconnect:
         ws_manager.disconnect(session_id)
 
-def emit_event_sync(session_id: str, event_type: str, data: dict):
+def emit_event_sync(session_id: str, event_type: str, data: dict, loop=None):
     event = {"type": event_type, **data}
-    loop = asyncio.get_event_loop()
-    if loop.is_running():
-        loop.create_task(ws_manager.send_event(session_id, event))
-    else:
-        asyncio.run(ws_manager.send_event(session_id, event))
+    if loop is None:
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # If no running loop in this thread, we can't emit easily without passing the main loop.
+            pass
+            
+    if loop and loop.is_running():
+        asyncio.run_coroutine_threadsafe(ws_manager.send_event(session_id, event), loop)
 
 @app.post("/agent/run")
 async def run_agent(request: Request):
@@ -122,9 +126,11 @@ async def run_agent(request: Request):
         print("Fallback to ExternalAPIProvider:", e)
         provider = ExternalAPIProvider()
     
+    main_loop = asyncio.get_running_loop()
+    
     # Custom emit callback wrapper
     def emit_cb(event_type, payload):
-        emit_event_sync(session_id, event_type, payload)
+        emit_event_sync(session_id, event_type, payload, main_loop)
 
     core = AgentCore(provider, ws_root, rm, project_id=project_id, task_id=task_id)
     
@@ -132,7 +138,7 @@ async def run_agent(request: Request):
     original_append = rm.append_message
     def append_with_events(sid, role, msg_content, iteration, metadata=None):
         original_append(sid, role, msg_content, iteration, metadata)
-        if role == "assistant":
+        if role == "assistant" or role == "system":
             emit_cb("llm_message", {"content": msg_content})
         elif role == "user":
             emit_cb("tool_result", {"result": msg_content})
@@ -146,12 +152,12 @@ async def run_agent(request: Request):
         # Wait 1 second to allow the frontend WebSocket to connect before emitting events
         await asyncio.sleep(1.0)
         
-        emit_event_sync(session_id, "session_started", {"project_id": project_id, "task_id": task_id})
+        emit_cb("session_started", {"project_id": project_id, "task_id": task_id})
         try:
             res = await asyncio.to_thread(core.run, 10, session_id)
-            emit_event_sync(session_id, "session_completed", {"result": res})
+            emit_cb("session_completed", {"result": res})
         except Exception as e:
-            emit_event_sync(session_id, "error", {"error": str(e)})
+            emit_cb("error", {"error": str(e)})
         finally:
             if session_id in active_cores:
                 del active_cores[session_id]
@@ -256,15 +262,16 @@ async def resume_session(session_id: str):
         print("Fallback to ExternalAPIProvider:", e)
         provider = ExternalAPIProvider()
     
+    main_loop = asyncio.get_running_loop()
     def emit_cb(event_type, payload):
-        emit_event_sync(session_id, event_type, payload)
+        emit_event_sync(session_id, event_type, payload, main_loop)
 
     core = AgentCore(provider, ws_root, rm, project_id=project_id, task_id=task_id)
     
     original_append = rm.append_message
     def append_with_events(sid, role, msg_content, iteration, metadata=None):
         original_append(sid, role, msg_content, iteration, metadata)
-        if role == "assistant":
+        if role == "assistant" or role == "system":
             emit_cb("llm_message", {"content": msg_content})
         elif role == "user":
             emit_cb("tool_result", {"result": msg_content})
@@ -274,12 +281,12 @@ async def resume_session(session_id: str):
     
     async def bg_task():
         await asyncio.sleep(1.0)
-        emit_event_sync(session_id, "session_resumed", {"project_id": project_id, "task_id": task_id})
+        emit_cb("session_resumed", {"project_id": project_id, "task_id": task_id})
         try:
             res = await asyncio.to_thread(core.run, 10, session_id)
-            emit_event_sync(session_id, "session_completed", {"result": res})
+            emit_cb("session_completed", {"result": res})
         except Exception as e:
-            emit_event_sync(session_id, "error", {"error": str(e)})
+            emit_cb("error", {"error": str(e)})
         finally:
             if session_id in active_cores:
                 del active_cores[session_id]
