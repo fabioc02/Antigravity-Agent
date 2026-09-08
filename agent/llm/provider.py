@@ -11,26 +11,32 @@ class LLMProvider(ABC):
 
 class LocalQwenProvider(LLMProvider):
     def __init__(self, model_name: str):
-        self.model_name = model_name
         import torch
-        
         self.use_gpu = torch.cuda.is_available()
         self.is_cpu_mode = not self.use_gpu
         
+        if self.is_cpu_mode:
+            # AWQ models crash on CPU and 7B is too large for 12GB RAM.
+            # We enforce a smaller 1.5B or 3B model for CPU mode to avoid OOM and crashes.
+            print("[LLM] CPU detected. Switching model to Qwen2.5-Coder-1.5B-Instruct to fit in RAM and avoid AWQ crashes.")
+            self.model_name = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+        else:
+            self.model_name = model_name
+
         if self.use_gpu:
             print("[LLM] GPU detected. Initializing Qwen in Agent mode via vLLM.")
             try:
                 from vllm import LLM, SamplingParams
                 from transformers import AutoTokenizer
-                self.llm = LLM(model=model_name, quantization="awq", trust_remote_code=True, gpu_memory_utilization=0.9, max_model_len=4096)
-                self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+                self.llm = LLM(model=self.model_name, quantization="awq", trust_remote_code=True, gpu_memory_utilization=0.9, max_model_len=4096)
+                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
                 self.params = SamplingParams(temperature=0.1, max_tokens=1024)
             except ImportError:
                 print("[LLM] vLLM not found. Falling back to Transformers on GPU.")
                 from transformers import AutoModelForCausalLM, AutoTokenizer
-                self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
                 self.model = AutoModelForCausalLM.from_pretrained(
-                    model_name,
+                    self.model_name,
                     device_map="auto",
                     torch_dtype=torch.float16,
                     trust_remote_code=True
@@ -40,9 +46,9 @@ class LocalQwenProvider(LLMProvider):
         else:
             print("[LLM] No GPU detected. Initializing Qwen in Chatbot mode (CPU).")
             from transformers import AutoModelForCausalLM, AutoTokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
             self.model = AutoModelForCausalLM.from_pretrained(
-                model_name,
+                self.model_name,
                 device_map="cpu",
                 torch_dtype=torch.float16,
                 trust_remote_code=True
