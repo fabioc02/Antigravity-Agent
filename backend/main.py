@@ -119,33 +119,13 @@ async def run_agent(request: Request):
     rm.acquire_lock()
     session_id = rm.start_session(task_id, project_id)
     
-    from agent.llm.provider import LocalQwenProvider, ExternalAPIProvider
-    try:
-        provider = LocalQwenProvider("Qwen/Qwen2.5-Coder-7B-Instruct-AWQ")
-    except Exception as e:
-        print("Fallback to ExternalAPIProvider:", e)
-        provider = ExternalAPIProvider()
-    
     main_loop = asyncio.get_running_loop()
     
     # Custom emit callback wrapper
     def emit_cb(event_type, payload):
         emit_event_sync(session_id, event_type, payload, main_loop)
 
-    core = AgentCore(provider, ws_root, rm, project_id=project_id, task_id=task_id)
-    
-    # Monkeypatch rm.append_message
-    original_append = rm.append_message
-    def append_with_events(sid, role, msg_content, iteration, metadata=None):
-        original_append(sid, role, msg_content, iteration, metadata)
-        if role == "assistant" or role == "system":
-            emit_cb("llm_message", {"content": msg_content})
-        elif role == "user":
-            emit_cb("tool_result", {"result": msg_content})
-            
-    rm.append_message = append_with_events
-    
-    active_cores[session_id] = core
+    active_cores[session_id] = "loading"
     
     # Run in background
     async def bg_task():
@@ -153,7 +133,38 @@ async def run_agent(request: Request):
         await asyncio.sleep(1.0)
         
         emit_cb("session_started", {"project_id": project_id, "task_id": task_id})
+        emit_cb("llm_message", {"content": "[Sistema] Carregando modelo de Inteligência Artificial local (Isso pode demorar um pouco na primeira execução)..."})
+        
         try:
+            def init_core():
+                from agent.llm.provider import LocalQwenProvider, ExternalAPIProvider
+                from agent.core.loop import AgentCore
+                try:
+                    provider = LocalQwenProvider("Qwen/Qwen2.5-Coder-7B-Instruct-AWQ")
+                except Exception as e:
+                    print("Fallback to ExternalAPIProvider:", e)
+                    provider = ExternalAPIProvider()
+                    
+                core = AgentCore(provider, ws_root, rm, project_id=project_id, task_id=task_id)
+                
+                # Monkeypatch rm.append_message
+                original_append = rm.append_message
+                def append_with_events(sid, role, msg_content, iteration, metadata=None):
+                    original_append(sid, role, msg_content, iteration, metadata)
+                    if role == "assistant" or role == "system":
+                        emit_cb("llm_message", {"content": msg_content})
+                    elif role == "user":
+                        emit_cb("tool_result", {"result": msg_content})
+                        
+                rm.append_message = append_with_events
+                return core
+            
+            core = await asyncio.to_thread(init_core)
+            if active_cores.get(session_id) == "CANCELLED":
+                return # Abort if cancelled during load
+                
+            active_cores[session_id] = core
+            
             res = await asyncio.to_thread(core.run, 10, session_id)
             emit_cb("session_completed", {"result": res})
         except Exception as e:
@@ -168,12 +179,15 @@ async def run_agent(request: Request):
 @app.post("/sessions/{session_id}/cancel")
 async def cancel_session(session_id: str):
     if session_id in active_cores:
-        # We simulate cancellation by raising an exception or stopping loop.
-        # Since loop is synchronous, hard to interrupt cleanly in python without threads.
-        # For this prototype, we'll just remove it and mark.
         core = active_cores[session_id]
-        core.status = "CANCELLED" # Assuming we can set a flag
-        del active_cores[session_id]
+        if hasattr(core, 'status'):
+            core.status = "CANCELLED"
+            del active_cores[session_id]
+        elif isinstance(core, str):
+            active_cores[session_id] = "CANCELLED"
+        else:
+            del active_cores[session_id]
+            
         emit_event_sync(session_id, "session_completed", {"result": "CANCELLED"})
         return {"status": "cancelled"}
     return {"status": "not_found"}
@@ -255,34 +269,46 @@ async def resume_session(session_id: str):
     rm.register_runtime()
     rm.acquire_lock()
     
-    from agent.llm.provider import LocalQwenProvider, ExternalAPIProvider
-    try:
-        provider = LocalQwenProvider("Qwen/Qwen2.5-Coder-7B-Instruct-AWQ")
-    except Exception as e:
-        print("Fallback to ExternalAPIProvider:", e)
-        provider = ExternalAPIProvider()
-    
     main_loop = asyncio.get_running_loop()
     def emit_cb(event_type, payload):
         emit_event_sync(session_id, event_type, payload, main_loop)
 
-    core = AgentCore(provider, ws_root, rm, project_id=project_id, task_id=task_id)
-    
-    original_append = rm.append_message
-    def append_with_events(sid, role, msg_content, iteration, metadata=None):
-        original_append(sid, role, msg_content, iteration, metadata)
-        if role == "assistant" or role == "system":
-            emit_cb("llm_message", {"content": msg_content})
-        elif role == "user":
-            emit_cb("tool_result", {"result": msg_content})
-            
-    rm.append_message = append_with_events
-    active_cores[session_id] = core
+    active_cores[session_id] = "loading"
     
     async def bg_task():
         await asyncio.sleep(1.0)
         emit_cb("session_resumed", {"project_id": project_id, "task_id": task_id})
+        emit_cb("llm_message", {"content": "[Sistema] Carregando modelo de Inteligência Artificial local (Isso pode demorar um pouco na primeira execução)..."})
+        
         try:
+            def init_core():
+                from agent.llm.provider import LocalQwenProvider, ExternalAPIProvider
+                from agent.core.loop import AgentCore
+                try:
+                    provider = LocalQwenProvider("Qwen/Qwen2.5-Coder-7B-Instruct-AWQ")
+                except Exception as e:
+                    print("Fallback to ExternalAPIProvider:", e)
+                    provider = ExternalAPIProvider()
+                    
+                core = AgentCore(provider, ws_root, rm, project_id=project_id, task_id=task_id)
+                
+                original_append = rm.append_message
+                def append_with_events(sid, role, msg_content, iteration, metadata=None):
+                    original_append(sid, role, msg_content, iteration, metadata)
+                    if role == "assistant" or role == "system":
+                        emit_cb("llm_message", {"content": msg_content})
+                    elif role == "user":
+                        emit_cb("tool_result", {"result": msg_content})
+                        
+                rm.append_message = append_with_events
+                return core
+                
+            core = await asyncio.to_thread(init_core)
+            if active_cores.get(session_id) == "CANCELLED":
+                return # Abort if cancelled during load
+                
+            active_cores[session_id] = core
+            
             res = await asyncio.to_thread(core.run, 10, session_id)
             emit_cb("session_completed", {"result": res})
         except Exception as e:
