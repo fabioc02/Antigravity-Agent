@@ -59,12 +59,12 @@ class ExternalAPIProvider(LLMProvider):
         
     def generate(self, prompt: str) -> str:
         # Mock logic to parse the user's intent from the prompt
-        if "crie um jogo em html" in prompt.lower() or "crie do zero um aplicativo" in prompt.lower():
-            return '```json\n{"tool": "filesystem.write", "args": {"path": "index.html", "content": "<html><body><h1>Jogo HTML Gerado (Mock CPU)</h1></body></html>"}}\n```\n'
-        
         if "index.html" in prompt and "Successfully wrote" in prompt:
             return 'O arquivo index.html foi criado com sucesso no seu workspace e salvo no Google Drive.\nTAREFA CONCLUIDA.'
             
+        if "crie um jogo em html" in prompt.lower() or "crie do zero um aplicativo" in prompt.lower():
+            return '```json\n{"tool": "filesystem.write", "args": {"path": "index.html", "content": "<html><body><h1>Jogo HTML Gerado (Mock CPU)</h1></body></html>"}}\n```\n'
+        
         # Default generic response for testing the UI
         return '```json\n{"tool": "terminal.execute", "args": {"command": "echo \'Fallback CPU executado com sucesso\'"}}\n```\nTAREFA CONCLUIDA.'
 
