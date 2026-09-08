@@ -44,6 +44,12 @@ class AgentCore:
         system_prompt = "Você é um agente autônomo de IA. Ferramentas disponíveis:\n"
         for name, t in self.tools.items():
             system_prompt += f"- {name}: {t.description}\n"
+            
+        if getattr(self.llm, "is_cpu_mode", False):
+            system_prompt += "\n[AVISO DE HARDWARE - MODO CPU]: Você está rodando em um ambiente com recursos limitados (apenas CPU). Concentre-se em responder perguntas de forma sucinta, realizar análises e escrever blocos de código leves. Evite criar projetos inteiros do zero de uma só vez ou realizar refatorações massivas em múltiplos arquivos.\n"
+        else:
+            system_prompt += "\n[AVISO DE HARDWARE - MODO GPU]: Aceleração total ativa. Você é capaz de executar tarefas complexas, gerar projetos completos do zero, analisar bases de código pesadas e realizar refatorações massivas.\n"
+            
         system_prompt += "\nDiretrizes de Workspace:\n- O seu diretório atual (.) já está no workspace local do projeto.\n- Tudo o que você criar ou editar será salvo automaticamente no Google Drive a cada interação.\n- Para interagir com o GitHub (ex: commitar, configurar remote, push), utilize a ferramenta 'terminal.execute' rodando comandos 'git' normais.\n"
         system_prompt += "\nFormate as chamadas de ferramentas como um bloco JSON: ```json\n{\"tool\": \"nome\", \"args\": {}}\n```. Se a tarefa estiver concluída, diga TAREFA CONCLUIDA. Por favor, sempre responda em Português."
         

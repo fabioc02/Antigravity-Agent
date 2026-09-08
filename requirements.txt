@@ -3,3 +3,6 @@ uvicorn
 websockets
 psutil
 pydantic
+torch
+transformers
+accelerate
